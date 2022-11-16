@@ -581,33 +581,33 @@ contract BreedingRouter is Ownable, Pausable, ReentrancyGuard {
         nftData.add(3);
         nftData.add(4);
         nftData.add(5);
-        // nftData.add(6);
-        // nftData.add(7);
-        // nftData.add(8);
-        // nftData.add(9);
-        // nftData.add(10);
-        // nftData.add(11);
-        // nftData.add(12);
-        // nftData.add(13);
-        // nftData.add(14);
-        // nftData.add(15);
-        // nftData.add(16);
-        // nftData.add(17);
-        // nftData.add(18);
-        // nftData.add(19);
-        // nftData.add(20);
-        // nftData.add(21);
-        // nftData.add(22);
-        // nftData.add(23);
-        // nftData.add(24);
-        // nftData.add(25);
-        // nftData.add(26);
-        // nftData.add(27);
-        // nftData.add(28);
-        // nftData.add(29);
-        // nftData.add(30);
-        // nftData.add(31);
-        // nftData.add(32);
+        nftData.add(6);
+        nftData.add(7);
+        nftData.add(8);
+        nftData.add(9);
+        nftData.add(10);
+        nftData.add(11);
+        nftData.add(12);
+        nftData.add(13);
+        nftData.add(14);
+        nftData.add(15);
+        nftData.add(16);
+        nftData.add(17);
+        nftData.add(18);
+        nftData.add(19);
+        nftData.add(20);
+        nftData.add(21);
+        nftData.add(22);
+        nftData.add(23);
+        nftData.add(24);
+        nftData.add(25);
+        nftData.add(26);
+        nftData.add(27);
+        nftData.add(28);
+        nftData.add(29);
+        nftData.add(30);
+        nftData.add(31);
+        nftData.add(32);
     }
 
     function batchBuyGen0(uint8 _number) public payable whenCanBuy(_number) {
@@ -638,6 +638,12 @@ contract BreedingRouter is Ownable, Pausable, ReentrancyGuard {
         return nftID;
     }
 
+    function withdrawBalance() external onlyOwner {
+        uint256 balance = address(this).balance;
+
+        payable(owner()).transfer(balance);
+    }
+    
     function _rand(uint256 index) internal view returns (uint256) {
         uint256 seed = uint256(
             keccak256(
