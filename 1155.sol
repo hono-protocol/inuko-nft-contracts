@@ -1,4 +1,3 @@
-
 pragma solidity ^0.8.0;
 
 interface IERC165 {
@@ -12,6 +11,7 @@ interface IERC165 {
      */
     function supportsInterface(bytes4 interfaceId) external view returns (bool);
 }
+
 interface IERC1155 is IERC165 {
     /**
      * @dev Emitted when `value` tokens of token type `id` are transferred from `from` to `to` by `operator`.

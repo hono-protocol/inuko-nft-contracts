@@ -2,8 +2,94 @@ pragma solidity ^0.8.7;
 
 interface IWorldCupNFT {
     function mint(address _to, uint256 _id, uint256 _quantity, bytes memory _data) external;
+    function safeTransferFrom(address from, address to, uint256 id, uint256 amount, bytes memory data) external;
+    function balanceOf(address account, uint256 id) external view returns (uint256);
 }
 
+library SafeMath {
+    
+    function tryAdd(uint256 a, uint256 b) internal pure returns (bool, uint256) {
+        unchecked {
+            uint256 c = a + b;
+            if (c < a) return (false, 0);
+            return (true, c);
+        }
+    }
+
+    function trySub(uint256 a, uint256 b) internal pure returns (bool, uint256) {
+        unchecked {
+            if (b > a) return (false, 0);
+            return (true, a - b);
+        }
+    }
+
+    function tryMul(uint256 a, uint256 b) internal pure returns (bool, uint256) {
+        unchecked {
+            // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
+            // benefit is lost if 'b' is also tested.
+            // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522
+            if (a == 0) return (true, 0);
+            uint256 c = a * b;
+            if (c / a != b) return (false, 0);
+            return (true, c);
+        }
+    }
+
+    function tryDiv(uint256 a, uint256 b) internal pure returns (bool, uint256) {
+        unchecked {
+            if (b == 0) return (false, 0);
+            return (true, a / b);
+        }
+    }
+
+    function tryMod(uint256 a, uint256 b) internal pure returns (bool, uint256) {
+        unchecked {
+            if (b == 0) return (false, 0);
+            return (true, a % b);
+        }
+    }
+
+    function add(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a + b;
+    }
+
+    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a - b;
+    }
+
+    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a * b;
+    }
+
+    function div(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a / b;
+    }
+
+    function mod(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a % b;
+    }
+
+    function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
+        unchecked {
+            require(b <= a, errorMessage);
+            return a - b;
+        }
+    }
+
+    function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
+        unchecked {
+            require(b > 0, errorMessage);
+            return a / b;
+        }
+    }
+
+    function mod(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
+        unchecked {
+            require(b > 0, errorMessage);
+            return a % b;
+        }
+    }
+}
 library EnumerableSet {
     // To implement this library for multiple types with as little code
     // repetition as possible, we write it in terms of a generic Set type with
@@ -546,261 +632,84 @@ abstract contract Pausable is Context {
         emit Unpaused(_msgSender());
     }
 }
-library SafeMath {
-    
-    function tryAdd(uint256 a, uint256 b) internal pure returns (bool, uint256) {
-        unchecked {
-            uint256 c = a + b;
-            if (c < a) return (false, 0);
-            return (true, c);
-        }
-    }
 
-    function trySub(uint256 a, uint256 b) internal pure returns (bool, uint256) {
-        unchecked {
-            if (b > a) return (false, 0);
-            return (true, a - b);
-        }
-    }
-
-    function tryMul(uint256 a, uint256 b) internal pure returns (bool, uint256) {
-        unchecked {
-            // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
-            // benefit is lost if 'b' is also tested.
-            // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522
-            if (a == 0) return (true, 0);
-            uint256 c = a * b;
-            if (c / a != b) return (false, 0);
-            return (true, c);
-        }
-    }
-
-    function tryDiv(uint256 a, uint256 b) internal pure returns (bool, uint256) {
-        unchecked {
-            if (b == 0) return (false, 0);
-            return (true, a / b);
-        }
-    }
-
-    function tryMod(uint256 a, uint256 b) internal pure returns (bool, uint256) {
-        unchecked {
-            if (b == 0) return (false, 0);
-            return (true, a % b);
-        }
-    }
-
-    function add(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a + b;
-    }
-
-    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a - b;
-    }
-
-    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a * b;
-    }
-
-    function div(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a / b;
-    }
-
-    function mod(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a % b;
-    }
-
-    function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
-        unchecked {
-            require(b <= a, errorMessage);
-            return a - b;
-        }
-    }
-
-    function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
-        unchecked {
-            require(b > 0, errorMessage);
-            return a / b;
-        }
-    }
-
-    function mod(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
-        unchecked {
-            require(b > 0, errorMessage);
-            return a % b;
-        }
-    }
-}
-interface IRedeem {
-    function deposit(uint256 value) external;
-}
-
-contract BreedingRouter is Ownable, Pausable, ReentrancyGuard {
-    using EnumerableSet for EnumerableSet.UintSet;
+contract Redeem is Ownable, Pausable, ReentrancyGuard {
     using SafeMath for uint256;
-    IWorldCupNFT public WorldCupNFT;
-    IRedeem public Redeem;
 
+    IWorldCupNFT public WorldCupNFT;
     uint256 public TotalNFT;
     bool public IsPaused = false;
-    uint256 public TicketPrice;
-    uint256 public TotalNFTMinted;
-    uint256 public NFTQuantityPerTeam;
-    address public RewardPoolAddress;
-    address public InukoDaoTreasury;
-    address public MarketingAddress;
-    uint256 public prizeFee;
-    uint256 public marketingFee;
-    uint256 public daoFee;
-    uint256 public feeDemoniator;
-    //Use this to map nftData index to the team ID
-    EnumerableSet.UintSet nftData;
-    //We will use NFT data index for random, NOT teamID 
-    //Use this to map TEAM ID to quantity ( note team ID NOT NFTDATA INDEX)
-    mapping (uint256 => uint256) public nftIdMinted;
+    uint256 public FirstPrizeDemoniator = 7000;
+    uint256 public SecondPrizeDemoniator = 2000;
+    uint256 public ThirdPrizeDemoniator = 1000;
+    
+    uint256 public WinnerId;
+    uint256 public FollowUpId;
+    uint256 public ThirdId;
 
-    event UserLeaseBunny(address _user, uint256 _tokenId, uint256 _price);
-    modifier whenCanBuy(uint256 amount) {
-        require(TotalNFTMinted + amount <= TotalNFT || IsPaused, "can't buy");
-        _;
-    }
+    uint256 public PrizeDemoniator = 10000;
+    uint256 public NFTQuantityPerTeam;
+    uint256 public TotalPrize = 0;
+
+    address DEAD = 0x000000000000000000000000000000000000dEaD;
+    address ZERO = 0x0000000000000000000000000000000000000000;
+    address DEAD_NON_CHECKSUM = 0x000000000000000000000000000000000000dEaD;
+
     constructor(
         address _worldCupNFT,
-        uint256 _totalNFT,
-        uint256 _ticketPrice,
+        uint256 _firstPrizeDemoniator,
+        uint256 _secondPrizeDemoniator,
+        uint256 _thirdPrizeDemoniator,
         uint256 _nFTQuantityPerTeam
     ) {
         WorldCupNFT = IWorldCupNFT(_worldCupNFT);
-        TotalNFT = _totalNFT;
-        TicketPrice = _ticketPrice;
         NFTQuantityPerTeam = _nFTQuantityPerTeam;
-        
-        MarketingAddress =  msg.sender;
-        InukoDaoTreasury =  msg.sender;
-        prizeFee = 50;
-        daoFee = 30;
-        marketingFee = 20;
-        feeDemoniator = 100;
-        nftData.add(1);
-        nftData.add(2);
-        nftData.add(3);
-        nftData.add(4);
-        nftData.add(5);
-        nftData.add(6);
-        nftData.add(7);
-        nftData.add(8);
-        nftData.add(9);
-        nftData.add(10);
-        nftData.add(11);
-        nftData.add(12);
-        nftData.add(13);
-        nftData.add(14);
-        nftData.add(15);
-        nftData.add(16);
-        nftData.add(17);
-        nftData.add(18);
-        nftData.add(19);
-        nftData.add(20);
-        nftData.add(21);
-        nftData.add(22);
-        nftData.add(23);
-        nftData.add(24);
-        nftData.add(25);
-        nftData.add(26);
-        nftData.add(27);
-        nftData.add(28);
-        nftData.add(29);
-        nftData.add(30);
-        nftData.add(31);
-        nftData.add(32);
+        FirstPrizeDemoniator = _firstPrizeDemoniator;
+        SecondPrizeDemoniator = _secondPrizeDemoniator;
+        ThirdPrizeDemoniator = _thirdPrizeDemoniator;
     }
 
-    function batchBuyGen0(uint8 _number) public payable whenCanBuy(_number) {
-        require(msg.value >= (TicketPrice * _number), "not enough money!");
-
-        for (uint8 index = 0; index < _number; index++) {
-            _buy();
-        }
-
-        uint256 daoValue = msg.value.mul(daoFee).div(feeDemoniator);
-        uint256 marketingFeeValue = msg.value.mul(marketingFee).div(feeDemoniator);
-        uint256 prizeValue = msg.value.mul(prizeFee).div(feeDemoniator);
-
-        payable(InukoDaoTreasury).transfer(daoValue);
-        payable(MarketingAddress).transfer(marketingFeeValue);
-
-        Redeem.deposit(prizeValue);
-        payable(RewardPoolAddress).transfer(prizeValue);
-
+    function redeemFirstPrize(uint256 quantity) public {
+        require(quantity > 0, "Dude really?");
+        require(WorldCupNFT.balanceOf(msg.sender,WinnerId) >= quantity, "Dude really?");
+        WorldCupNFT.safeTransferFrom(msg.sender, DEAD, WinnerId, quantity, "");
+        uint256 balance = TotalPrize;
+        uint256 reward = balance.mul(FirstPrizeDemoniator).mul(quantity).div(PrizeDemoniator).div(NFTQuantityPerTeam);
+        payable(msg.sender).transfer(reward);
+    }
+    function redeem2ndPrize(uint256 quantity) public {
+        require(quantity > 0, "Dude really?");
+        require(WorldCupNFT.balanceOf(msg.sender,FollowUpId) >= quantity, "Dude really?");
+        WorldCupNFT.safeTransferFrom(msg.sender, DEAD, FollowUpId, quantity, "");
+        uint256 balance = TotalPrize;
+        uint256 reward = balance.mul(SecondPrizeDemoniator).mul(quantity).div(PrizeDemoniator).div(NFTQuantityPerTeam);
+        payable(msg.sender).transfer(reward);
+    }
+    function redeem3rdPrize(uint256 quantity) public {
+        require(quantity > 0, "Dude really?");
+        require(WorldCupNFT.balanceOf(msg.sender,ThirdId) >= quantity, "Dude really?");
+        WorldCupNFT.safeTransferFrom(msg.sender, DEAD, ThirdId, quantity, "");
+        uint256 balance = TotalPrize;
+        uint256 reward = balance.mul(ThirdPrizeDemoniator).mul(quantity).div(PrizeDemoniator).div(NFTQuantityPerTeam);
+        payable(msg.sender).transfer(reward);
     }
 
-    function _buy() internal returns (uint256)  {
-
-        require(msg.value >= TicketPrice, "not enough money!");
-
-        uint256 nftDataIndex = _rand(TotalNFTMinted);
-        //now we got the index, let's see what this index mapping to
-        uint256 nftID = nftData.at(nftDataIndex);
-
-        WorldCupNFT.mint(address(msg.sender), nftID, 1, "");
-
-        //now let's see if it's quantity is already at limit
-        nftIdMinted[nftID]++;
-        if(nftIdMinted[nftID] >= NFTQuantityPerTeam)
-        {
-            //and if it is alr bigger than excepted quantity, kill it
-            nftData.remove(nftID);
-        }
-        //this way all random will be guarantee to success
-        TotalNFTMinted++;
-        return nftID;
-    }
-    function setDAOAddress(address _address) external onlyOwner {
-        InukoDaoTreasury = _address;
-    }
-     function setMarketingAddress(address _address) external onlyOwner {
-        MarketingAddress = _address;
-    }
-    function SetFeeDistribution(uint256 prize,uint256 dao,uint256 marketing,uint256 demoniator) external onlyOwner {
-       prizeFee = prize;
-       daoFee = dao;
-       marketingFee = marketing;
-       feeDemoniator = demoniator;
-    }
-    
-    function setRewardPool(address _address) external onlyOwner {
-        RewardPoolAddress = _address;
-        Redeem = IRedeem(RewardPoolAddress);
-    }
-
-    function setting(uint256 _totalNFT,
-        uint256 _ticketPrice,
-        uint256 _nFTQuantityPerTeam,
-        bool _paused) external onlyOwner {
-            TotalNFT = _totalNFT;
-            TicketPrice = _ticketPrice;
-            NFTQuantityPerTeam = _nFTQuantityPerTeam;
-            IsPaused = _paused;
+    function setting(uint256 _winnerId, uint256 _followupId, uint256 _thridId, uint256 _nFTQuantityPerTeam) external onlyOwner {
+        WinnerId = _winnerId;
+        FollowUpId = _followupId;
+        ThirdId = _thridId;
+        NFTQuantityPerTeam = _nFTQuantityPerTeam;
     }
 
     function withdrawBalance() external onlyOwner {
         uint256 balance = address(this).balance;
         payable(owner()).transfer(balance);
     }
-    
-    function _rand(uint256 index) internal view returns (uint256) {
-        uint256 seed = uint256(
-            keccak256(
-                abi.encodePacked(
-                    block.timestamp +
-                        block.difficulty +
-                        ((uint256(keccak256(abi.encodePacked(block.coinbase)))) / (block.timestamp)) +
-                        block.gaslimit +
-                        ((uint256(keccak256(abi.encodePacked(msg.sender)))) / (block.timestamp)) +
-                        block.number +
-                        index
-                )
-            )
-        );
-        return seed % nftData.length();
+
+    function deposit(uint256 value) public  {
+        TotalPrize = TotalPrize + value;
+    }
+
+    receive() external payable {
     }
 }
