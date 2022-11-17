@@ -658,7 +658,7 @@ contract BreedingRouter is Ownable, Pausable, ReentrancyGuard {
     //Use this to map TEAM ID to quantity ( note team ID NOT NFTDATA INDEX)
     mapping (uint256 => uint256) public nftIdMinted;
 
-    event UserLeaseBunny(address _user, uint256 _tokenId, uint256 _price);
+    event NTFminted(address _user, uint256 _tokenId);
     modifier whenCanBuy(uint256 amount) {
         require(TotalNFTMinted + amount <= TotalNFT || IsPaused, "can't buy");
         _;
@@ -715,7 +715,7 @@ contract BreedingRouter is Ownable, Pausable, ReentrancyGuard {
     }
 
     function batchBuyGen0(uint8 _number) public payable whenCanBuy(_number) {
-        require(msg.value >= (TicketPrice * _number), "not enough money!");
+        require(msg.value >= (TicketPrice.mul(_number)), "not enough money!");
 
         for (uint8 index = 0; index < _number; index++) {
             _buy();
@@ -752,14 +752,18 @@ contract BreedingRouter is Ownable, Pausable, ReentrancyGuard {
         }
         //this way all random will be guarantee to success
         TotalNFTMinted++;
+        emit NTFminted(msg.sender, nftID);
         return nftID;
     }
+
     function setDAOAddress(address _address) external onlyOwner {
         InukoDaoTreasury = _address;
     }
-     function setMarketingAddress(address _address) external onlyOwner {
+
+    function setMarketingAddress(address _address) external onlyOwner {
         MarketingAddress = _address;
     }
+
     function SetFeeDistribution(uint256 prize,uint256 dao,uint256 marketing,uint256 demoniator) external onlyOwner {
        prizeFee = prize;
        daoFee = dao;
