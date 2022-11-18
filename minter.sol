@@ -634,7 +634,7 @@ interface IRedeem {
     function deposit(uint256 value) external;
 }
 
-contract BreedingRouter is Ownable, Pausable, ReentrancyGuard {
+contract MintingRouter is Ownable, Pausable, ReentrancyGuard {
     using EnumerableSet for EnumerableSet.UintSet;
     using SafeMath for uint256;
     IWorldCupNFT public WorldCupNFT;

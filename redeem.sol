@@ -90,6 +90,7 @@ library SafeMath {
         }
     }
 }
+
 library EnumerableSet {
     // To implement this library for multiple types with as little code
     // repetition as possible, we write it in terms of a generic Set type with
@@ -438,6 +439,7 @@ abstract contract Context {
         return msg.data;
     }
 }
+
 abstract contract Ownable is Context {
     address private _owner;
 
@@ -641,11 +643,11 @@ contract Redeem is Ownable, Pausable, ReentrancyGuard {
     bool public IsPaused = false;
     uint256 public FirstPrizeDemoniator = 7000;
     uint256 public SecondPrizeDemoniator = 2000;
-    uint256 public ThirdPrizeDemoniator = 1000;
+    uint256 public BronzePrizeDemoniator = 1000;
     
-    uint256 public WinnerId;
-    uint256 public FollowUpId;
-    uint256 public ThirdId;
+    uint256 public GoldId=9999999999;
+    uint256 public SilverId=9999999999;
+    uint256 public BronzeId=9999999999;
 
     uint256 public PrizeDemoniator = 10000;
     uint256 public NFTQuantityPerTeam;
@@ -659,46 +661,54 @@ contract Redeem is Ownable, Pausable, ReentrancyGuard {
         address _worldCupNFT,
         uint256 _firstPrizeDemoniator,
         uint256 _secondPrizeDemoniator,
-        uint256 _thirdPrizeDemoniator,
+        uint256 _BronzePrizeDemoniator,
         uint256 _nFTQuantityPerTeam
     ) {
         WorldCupNFT = IWorldCupNFT(_worldCupNFT);
         NFTQuantityPerTeam = _nFTQuantityPerTeam;
         FirstPrizeDemoniator = _firstPrizeDemoniator;
         SecondPrizeDemoniator = _secondPrizeDemoniator;
-        ThirdPrizeDemoniator = _thirdPrizeDemoniator;
+        BronzePrizeDemoniator = _BronzePrizeDemoniator;
     }
 
     function redeemFirstPrize(uint256 quantity) public {
         require(quantity > 0, "Dude really?");
-        require(WorldCupNFT.balanceOf(msg.sender,WinnerId) >= quantity, "Dude really?");
-        WorldCupNFT.safeTransferFrom(msg.sender, DEAD, WinnerId, quantity, "");
+        require(WorldCupNFT.balanceOf(msg.sender,GoldId) >= quantity, "Dude really?");
+        WorldCupNFT.safeTransferFrom(msg.sender, DEAD, GoldId, quantity, "");
         uint256 balance = TotalPrize;
         uint256 reward = balance.mul(FirstPrizeDemoniator).mul(quantity).div(PrizeDemoniator).div(NFTQuantityPerTeam);
         payable(msg.sender).transfer(reward);
     }
+    
     function redeem2ndPrize(uint256 quantity) public {
         require(quantity > 0, "Dude really?");
-        require(WorldCupNFT.balanceOf(msg.sender,FollowUpId) >= quantity, "Dude really?");
-        WorldCupNFT.safeTransferFrom(msg.sender, DEAD, FollowUpId, quantity, "");
+        require(WorldCupNFT.balanceOf(msg.sender,SilverId) >= quantity, "Dude really?");
+        WorldCupNFT.safeTransferFrom(msg.sender, DEAD, SilverId, quantity, "");
         uint256 balance = TotalPrize;
         uint256 reward = balance.mul(SecondPrizeDemoniator).mul(quantity).div(PrizeDemoniator).div(NFTQuantityPerTeam);
         payable(msg.sender).transfer(reward);
     }
+
     function redeem3rdPrize(uint256 quantity) public {
         require(quantity > 0, "Dude really?");
-        require(WorldCupNFT.balanceOf(msg.sender,ThirdId) >= quantity, "Dude really?");
-        WorldCupNFT.safeTransferFrom(msg.sender, DEAD, ThirdId, quantity, "");
+        require(WorldCupNFT.balanceOf(msg.sender,BronzeId) >= quantity, "Dude really?");
+        WorldCupNFT.safeTransferFrom(msg.sender, DEAD, BronzeId, quantity, "");
         uint256 balance = TotalPrize;
-        uint256 reward = balance.mul(ThirdPrizeDemoniator).mul(quantity).div(PrizeDemoniator).div(NFTQuantityPerTeam);
+        uint256 reward = balance.mul(BronzePrizeDemoniator).mul(quantity).div(PrizeDemoniator).div(NFTQuantityPerTeam);
         payable(msg.sender).transfer(reward);
     }
 
-    function setting(uint256 _winnerId, uint256 _followupId, uint256 _thridId, uint256 _nFTQuantityPerTeam) external onlyOwner {
-        WinnerId = _winnerId;
-        FollowUpId = _followupId;
-        ThirdId = _thridId;
+    function setting(uint256 _nFTQuantityPerTeam) external onlyOwner {
         NFTQuantityPerTeam = _nFTQuantityPerTeam;
+    }
+    function setGold(uint256 _goldId) external onlyOwner {
+        GoldId = _goldId;
+    }
+    function setSilver(uint256 _silver) external onlyOwner {
+        SilverId = _silver;
+    }
+    function setBronze(uint256 _bronze) external onlyOwner {
+        BronzeId = _bronze;
     }
 
     function withdrawBalance() external onlyOwner {
