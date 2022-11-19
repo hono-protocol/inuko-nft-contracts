@@ -652,6 +652,7 @@ contract Redeem is Ownable, Pausable, ReentrancyGuard {
     uint256 public PrizeDemoniator = 10000;
     uint256 public NFTQuantityPerTeam;
     uint256 public TotalPrize = 0;
+    mapping (address => bool) public minters;
 
     address DEAD = 0x000000000000000000000000000000000000dEaD;
     address ZERO = 0x0000000000000000000000000000000000000000;
@@ -716,7 +717,12 @@ contract Redeem is Ownable, Pausable, ReentrancyGuard {
         payable(owner()).transfer(balance);
     }
 
+    function setMinters(address _newMInter, bool _isAllowed) external onlyOwner {
+        minters[_newMInter] = _isAllowed;
+    }
+
     function deposit(uint256 value) public  {
+        require(minters[msg.sender] == true, "Sorry you cant do this");
         TotalPrize = TotalPrize + value;
     }
 
