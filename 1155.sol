@@ -1,4 +1,99 @@
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.13;
+
+/**
+ * @title  OperatorFilterer
+ * @notice Abstract contract whose constructor automatically registers and optionally subscribes to or copies another
+ *         registrant's entries in the OperatorFilterRegistry.
+ * @dev    This smart contract is meant to be inherited by token contracts so they can use the following:
+ *         - `onlyAllowedOperator` modifier for `transferFrom` and `safeTransferFrom` methods.
+ *         - `onlyAllowedOperatorApproval` modifier for `approve` and `setApprovalForAll` methods.
+ */
+interface IOperatorFilterRegistry {
+    function isOperatorAllowed(address registrant, address operator) external view returns (bool);
+    function register(address registrant) external;
+    function registerAndSubscribe(address registrant, address subscription) external;
+    function registerAndCopyEntries(address registrant, address registrantToCopy) external;
+    function unregister(address addr) external;
+    function updateOperator(address registrant, address operator, bool filtered) external;
+    function updateOperators(address registrant, address[] calldata operators, bool filtered) external;
+    function updateCodeHash(address registrant, bytes32 codehash, bool filtered) external;
+    function updateCodeHashes(address registrant, bytes32[] calldata codeHashes, bool filtered) external;
+    function subscribe(address registrant, address registrantToSubscribe) external;
+    function unsubscribe(address registrant, bool copyExistingEntries) external;
+    function subscriptionOf(address addr) external returns (address registrant);
+    function subscribers(address registrant) external returns (address[] memory);
+    function subscriberAt(address registrant, uint256 index) external returns (address);
+    function copyEntriesOf(address registrant, address registrantToCopy) external;
+    function isOperatorFiltered(address registrant, address operator) external returns (bool);
+    function isCodeHashOfFiltered(address registrant, address operatorWithCode) external returns (bool);
+    function isCodeHashFiltered(address registrant, bytes32 codeHash) external returns (bool);
+    function filteredOperators(address addr) external returns (address[] memory);
+    function filteredCodeHashes(address addr) external returns (bytes32[] memory);
+    function filteredOperatorAt(address registrant, uint256 index) external returns (address);
+    function filteredCodeHashAt(address registrant, uint256 index) external returns (bytes32);
+    function isRegistered(address addr) external returns (bool);
+    function codeHashOf(address addr) external returns (bytes32);
+}
+abstract contract OperatorFilterer {
+    error OperatorNotAllowed(address operator);
+
+    IOperatorFilterRegistry public constant OPERATOR_FILTER_REGISTRY =
+        IOperatorFilterRegistry(0x000000000000AAeB6D7670E522A718067333cd4E);
+
+    constructor(address subscriptionOrRegistrantToCopy, bool subscribe) {
+        // If an inheriting token contract is deployed to a network without the registry deployed, the modifier
+        // will not revert, but the contract will need to be registered with the registry once it is deployed in
+        // order for the modifier to filter addresses.
+        if (address(OPERATOR_FILTER_REGISTRY).code.length > 0) {
+            if (subscribe) {
+                OPERATOR_FILTER_REGISTRY.registerAndSubscribe(address(this), subscriptionOrRegistrantToCopy);
+            } else {
+                if (subscriptionOrRegistrantToCopy != address(0)) {
+                    OPERATOR_FILTER_REGISTRY.registerAndCopyEntries(address(this), subscriptionOrRegistrantToCopy);
+                } else {
+                    OPERATOR_FILTER_REGISTRY.register(address(this));
+                }
+            }
+        }
+    }
+
+    modifier onlyAllowedOperator(address from) virtual {
+        // Check registry code length to facilitate testing in environments without a deployed registry.
+        if (address(OPERATOR_FILTER_REGISTRY).code.length > 0) {
+            // Allow spending tokens from addresses with balance
+            // Note that this still allows listings and marketplaces with escrow to transfer tokens if transferred
+            // from an EOA.
+            if (from == msg.sender) {
+                _;
+                return;
+            }
+            if (!OPERATOR_FILTER_REGISTRY.isOperatorAllowed(address(this), msg.sender)) {
+                revert OperatorNotAllowed(msg.sender);
+            }
+        }
+        _;
+    }
+
+    modifier onlyAllowedOperatorApproval(address operator) virtual {
+        // Check registry code length to facilitate testing in environments without a deployed registry.
+        if (address(OPERATOR_FILTER_REGISTRY).code.length > 0) {
+            if (!OPERATOR_FILTER_REGISTRY.isOperatorAllowed(address(this), operator)) {
+                revert OperatorNotAllowed(operator);
+            }
+        }
+        _;
+    }
+}
+
+/**
+ * @title  DefaultOperatorFilterer
+ * @notice Inherits from OperatorFilterer and automatically subscribes to the default OpenSea subscription.
+ */
+abstract contract DefaultOperatorFilterer is OperatorFilterer {
+    address constant DEFAULT_SUBSCRIPTION = address(0x3cc6CddA760b79bAfa08dF41ECFA224f810dCeB6);
+
+    constructor() OperatorFilterer(DEFAULT_SUBSCRIPTION, true) {}
+}
 
 interface IERC165 {
     /**
@@ -124,6 +219,7 @@ interface IERC1155 is IERC165 {
         bytes calldata data
     ) external;
 }
+
 interface IERC1155MetadataURI is IERC1155 {
     /**
      * @dev Returns the URI for token type `id`.
@@ -133,6 +229,7 @@ interface IERC1155MetadataURI is IERC1155 {
      */
     function uri(uint256 id) external view returns (string memory);
 }
+
 interface IERC1155Receiver is IERC165 {
     /**
      * @dev Handles the receipt of a single ERC1155 token type. This function is
@@ -1053,7 +1150,7 @@ contract ERC1155 is Context, ERC165, IERC1155, IERC1155MetadataURI {
     }
 }
 
-contract WorldCupNFT is ERC1155, ReentrancyGuard, Ownable {
+contract WorldCupNFT is ERC1155, ReentrancyGuard, Ownable, DefaultOperatorFilterer{
   using Strings for string;
   string public name;
   string public symbol;
@@ -1068,36 +1165,58 @@ contract WorldCupNFT is ERC1155, ReentrancyGuard, Ownable {
   ) ERC1155(_url) {
       name = _name;
       symbol = _symbol;
+      creators[msg.sender]  = true;
   }
-  modifier creatorOnly() {
-    require(creators[msg.sender] == true, "ERC1155Tradable#creatorOnly: ONLY_CREATOR_ALLOWED");
-  _;
-  }
-  function uri(uint256 _tokenId) public view virtual override returns (string memory) {
-    return Strings.strConcat(
-      customUrl,
-      Strings.toString(_tokenId)
-      );
-  }
+    modifier creatorOnly() {
+        require(creators[msg.sender] == true, "ERC1155Tradable#creatorOnly: ONLY_CREATOR_ALLOWED");
+    _;
+    }
+    function uri(uint256 _tokenId) public view virtual override returns (string memory) {
+        return Strings.strConcat(
+        customUrl,
+        Strings.toString(_tokenId)
+        );
+    }
 
-  function setURI(string memory newuri) external onlyOwner {
-      customUrl = newuri;
-  }
+    function setURI(string memory newuri) external onlyOwner {
+        customUrl = newuri;
+    }
 
-  function burn(uint256 id, uint256 amount) external {
-    _burn(tx.origin, id, amount);
-  }
+    function burn(uint256 id, uint256 amount) external {
+        _burn(tx.origin, id, amount);
+    }
 
-  function totalSupply(uint256 _id) public view returns (uint256) {
-    return tokenSupply[_id];
-  }
+    function totalSupply(uint256 _id) public view returns (uint256) {
+        return tokenSupply[_id];
+    }
 
-  function setCreator(address _creator, bool allowed) public onlyOwner{
-    creators[_creator] = allowed;
-  }
+    function setCreator(address _creator, bool allowed) public onlyOwner{
+        creators[_creator] = allowed;
+    }
 
-  function mint(address _to, uint256 _id, uint256 _quantity, bytes memory _data) public creatorOnly {
+    function mint(address _to, uint256 _id, uint256 _quantity, bytes memory _data) public creatorOnly {
     _mint(_to, _id, _quantity, _data);
     tokenSupply[_id] = tokenSupply[_id] + (_quantity);
   }
+    function setApprovalForAll(address operator, bool approved) public override onlyAllowedOperatorApproval(operator) {
+        super.setApprovalForAll(operator, approved);
+    }
+
+    function safeTransferFrom(address from, address to, uint256 tokenId, uint256 amount, bytes memory data)
+        public
+        override
+        onlyAllowedOperator(from)
+    {
+        super.safeTransferFrom(from, to, tokenId, amount, data);
+    }
+
+    function safeBatchTransferFrom(
+        address from,
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bytes memory data
+    ) public virtual override onlyAllowedOperator(from) {
+        super.safeBatchTransferFrom(from, to, ids, amounts, data);
+    }
 }
