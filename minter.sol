@@ -712,6 +712,16 @@ contract MintingRouter is Ownable, Pausable, ReentrancyGuard {
         nftData.add(30);
         nftData.add(31);
         nftData.add(32);
+
+        nftIdMinted[16]=1;
+        nftIdMinted[9]=1;
+        nftIdMinted[22]=1;
+        nftIdMinted[7]=1;
+        nftIdMinted[14]=2;
+        nftIdMinted[27]=1;
+        nftIdMinted[28]=2;
+        nftIdMinted[17]=1;
+        nftIdMinted[13]=1;
     }
 
     function batchBuyGen0(uint8 _number) public payable whenCanBuy(_number) {
@@ -744,7 +754,7 @@ contract MintingRouter is Ownable, Pausable, ReentrancyGuard {
         WorldCupNFT.mint(address(msg.sender), nftID, 1, "");
 
         //now let's see if it's quantity is already at limit
-        nftIdMinted[nftID]++;
+        nftIdMinted[nftID] = nftIdMinted[nftID] + 1;
         if(nftIdMinted[nftID] >= NFTQuantityPerTeam)
         {
             //and if it is alr bigger than excepted quantity, kill it
@@ -791,6 +801,10 @@ contract MintingRouter is Ownable, Pausable, ReentrancyGuard {
         payable(owner()).transfer(balance);
     }
     
+    function setNFTAddress(address _nftAddress) external onlyOwner {
+        WorldCupNFT =  IWorldCupNFT(_nftAddress);
+    }
+
     function _rand(uint256 index) internal view returns (uint256) {
         uint256 seed = uint256(
             keccak256(
