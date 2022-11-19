@@ -702,6 +702,9 @@ contract Redeem is Ownable, Pausable, ReentrancyGuard {
     function setting(uint256 _nFTQuantityPerTeam) external onlyOwner {
         NFTQuantityPerTeam = _nFTQuantityPerTeam;
     }
+    function setNFTAddress(address _nftAddress) external onlyOwner {
+        WorldCupNFT =  IWorldCupNFT(_nftAddress);
+    }
     function setGold(uint256 _goldId) external onlyOwner {
         GoldId = _goldId;
     }
