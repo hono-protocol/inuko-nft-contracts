@@ -680,48 +680,24 @@ contract MintingRouter is Ownable, Pausable, ReentrancyGuard {
         daoFee = 30;
         marketingFee = 20;
         feeDemoniator = 100;
-        nftData.add(1);
-        nftData.add(2);
-        nftData.add(3);
-        nftData.add(4);
-        nftData.add(5);
-        nftData.add(6);
-        nftData.add(7);
-        nftData.add(8);
-        nftData.add(9);
-        nftData.add(10);
-        nftData.add(11);
-        nftData.add(12);
-        nftData.add(13);
-        nftData.add(14);
-        nftData.add(15);
+      
         nftData.add(16);
-        nftData.add(17);
         nftData.add(18);
-        nftData.add(19);
-        nftData.add(20);
-        nftData.add(21);
         nftData.add(22);
-        nftData.add(23);
-        nftData.add(24);
-        nftData.add(25);
         nftData.add(26);
-        nftData.add(27);
+        nftData.add(27);  
         nftData.add(28);
         nftData.add(29);
         nftData.add(30);
-        nftData.add(31);
-        nftData.add(32);
 
-        nftIdMinted[16]=1;
-        nftIdMinted[9]=1;
-        nftIdMinted[22]=1;
-        nftIdMinted[7]=1;
-        nftIdMinted[14]=2;
-        nftIdMinted[27]=1;
-        nftIdMinted[28]=2;
-        nftIdMinted[17]=1;
-        nftIdMinted[13]=1;
+        nftIdMinted[16]=4;
+        nftIdMinted[18]=2;
+        nftIdMinted[22]=2;
+        nftIdMinted[26]=0;
+        nftIdMinted[27]=4;
+        nftIdMinted[28]=5;
+        nftIdMinted[29]=1;
+        nftIdMinted[30]=2;
     }
 
     function batchBuyGen0(uint8 _number) public payable whenCanBuy(_number) {
@@ -784,6 +760,14 @@ contract MintingRouter is Ownable, Pausable, ReentrancyGuard {
     function setRewardPool(address _address) external onlyOwner {
         RewardPoolAddress = _address;
         Redeem = IRedeem(RewardPoolAddress);
+    }
+
+    function updateNFTCount(uint256 teamId, uint256 newCount) external onlyOwner {
+        nftIdMinted[teamId] = newCount;
+    }
+
+    function removeNFT(uint256 teamId) external onlyOwner {
+        nftData.remove(teamId);
     }
 
     function setting(uint256 _totalNFT,
