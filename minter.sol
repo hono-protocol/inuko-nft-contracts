@@ -681,22 +681,18 @@ contract MintingRouter is Ownable, Pausable, ReentrancyGuard {
         marketingFee = 20;
         feeDemoniator = 100;
       
-        nftData.add(16);
         nftData.add(18);
         nftData.add(22);
         nftData.add(26);
         nftData.add(27);  
         nftData.add(28);
-        nftData.add(29);
         nftData.add(30);
 
-        nftIdMinted[16]=4;
         nftIdMinted[18]=2;
         nftIdMinted[22]=2;
         nftIdMinted[26]=0;
         nftIdMinted[27]=4;
         nftIdMinted[28]=5;
-        nftIdMinted[29]=1;
         nftIdMinted[30]=2;
     }
 
